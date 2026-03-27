@@ -260,19 +260,51 @@ st.set_page_config(
     page_title="✨ Astrologie & Pierres",
     page_icon="🔮",
     layout="centered",
-    initial_sidebar_state="auto",
+    initial_sidebar_state="expanded",
 )
 
 # ── PWA & Meta Tags ───────────────────────────────────────────────────────────
 st.markdown("""
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
 <meta name="theme-color" content="#0a0e27">
 <meta name="description" content="Découvrez votre thème astral, vos pierres de pouvoir et votre bien-être quotidien">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Astrologie & Pierres">
-<link rel="manifest" href="data:application/manifest+json,{%22name%22:%22Astrologie%20et%20Pierres%22,%22short_name%22:%22Astrologie%22,%22description%22:%22Votre guide astral%22,%22start_url%22:%22/%22,%22display%22:%22standalone%22,%22background_color%22:%22%230a0e27%22,%22theme_color%22:%22%23c77dff%22,%22icons%22:[{%22src%22:%22data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%20192%20192%27%3E%3Crect%20fill=%27%23c77dff%27%20width=%27192%27%20height=%27192%27/%3E%3Ctext%20x=%2796%27%20y=%27140%27%20font-size=%27100%27%20text-anchor=%27middle%27%20fill=%27%230a0e27%27%3E🔮%3C/text%3E%3C/svg%3E%22,%22sizes%22:%22192x192%22,%22type%22:%22image/svg+xml%22,%22purpose%22:%22any%22}]}">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%23c77dff' width='192' height='192'/><text x='96' y='140' font-size='100' text-anchor='middle' fill='%230a0e27'>🔮</text></svg>">
+
+<script>
+  // PWA Installation Prompt
+  let deferredPrompt;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    
+    // Afficher le bouton d'installation si disponible
+    const installBtn = document.getElementById('install-btn');
+    if (installBtn) {
+      installBtn.style.display = 'block';
+    }
+  });
+
+  function installApp() {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+          console.log('PWA installée');
+        }
+        deferredPrompt = null;
+        const installBtn = document.getElementById('install-btn');
+        if (installBtn) {
+          installBtn.style.display = 'none';
+        }
+      });
+    }
+  }
+</script>
 """, unsafe_allow_html=True)
 
 # ── CSS personnalisé ───────────────────────────────────────────────────────────
@@ -468,6 +500,40 @@ st.markdown("""
         .label { font-size: 0.8rem !important; }
         .coeur { font-size: 1.1rem !important; }
     }
+    
+    /* Bouton d'installation PWA */
+    #install-btn {
+        display: none;
+        background: linear-gradient(135deg, #5a4fcf, #c77dff);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 12px 24px;
+        font-size: 1rem;
+        font-weight: bold;
+        cursor: pointer;
+        width: 100%;
+        margin: 10px 0;
+        box-shadow: 0 4px 15px rgba(199, 125, 255, 0.4);
+    }
+    
+    #install-btn:hover {
+        opacity: 0.9;
+        box-shadow: 0 6px 20px rgba(199, 125, 255, 0.6);
+    }
+    
+    /* Sidebar visibilité mobile */
+    @media (max-width: 768px) {
+        [data-testid="stSidebar"] {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100% !important;
+            height: 100vh !important;
+            z-index: 999;
+            overflow-y: auto;
+        }
+    }
 
 </style>
 """, unsafe_allow_html=True)
@@ -507,8 +573,32 @@ with st.sidebar:
     st.markdown(
         "<p style='text-align:center; color:#b4b9d1; font-size:0.85rem;'>"
         "Remplissez le formulaire pour commencer</p>",
-        unsafe_allow_html=True
+        unsafe_allow_html=True,
     )
+    
+    # Bouton d'installation PWA
+    st.markdown("""
+    <button id="install-btn" onclick="installApp()">
+        📲 Ajouter à l'écran d'accueil
+    </button>
+    """, unsafe_allow_html=True)
+    
+    # Instructions d'installation
+    with st.expander("📱 Installation sur mobile"):
+        st.markdown("""
+        **iPhone/iPad (Safari):**
+        1. Appuyez sur le bouton de partage
+        2. Sélectionnez « Sur l'écran d'accueil »
+        3. Confirmez
+        
+        **Android (Chrome):**
+        1. Appuyez sur le menu (⋮)
+        2. Sélectionnez « Installer l'application »
+        3. Confirmez
+        
+        **Web (Desktop):**
+        Utiliser le navigateur normalement
+        """, unsafe_allow_html=True)
 
 # Titre principal
 st.markdown("# ✨ Astrologie & Pierres de Pouvoir")
