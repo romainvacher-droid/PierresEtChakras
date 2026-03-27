@@ -233,6 +233,25 @@ def get_couleurs(signe: Signe) -> list:
     return nom_map.get(signe.nom, [])
 
 
+def get_compatibilite(signe_nom: str, signe_amour_nom: str) -> int:
+    """Obtenir le score de compatibilité par noms de signes"""
+    # Créer un mappage des noms vers les scores
+    compatibilite_map = {}
+    for s1 in Signe:
+        if s1 in COMPATIBILITE_AMOUREUSE:
+            compatibilite_map[s1.nom] = {}
+            for s2 in Signe:
+                if s2 in COMPATIBILITE_AMOUREUSE[s1]:
+                    compatibilite_map[s1.nom][s2.nom] = COMPATIBILITE_AMOUREUSE[s1][s2]
+    return compatibilite_map.get(signe_nom, {}).get(signe_amour_nom, 0)
+
+
+def get_mantra(signe: Signe) -> str:
+    """Obtenir le mantra par signe"""
+    mantra_map = {s.nom: MANTRAS_PAR_SIGNE[s] for s in Signe if s in MANTRAS_PAR_SIGNE}
+    return mantra_map.get(signe.nom, "")
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # INTERFACE STREAMLIT
 # ─────────────────────────────────────────────────────────────────────────────
@@ -508,7 +527,7 @@ if signe and donnees:
         st.markdown(f"""
         <div class='mantra'>
             💬 <b>Mantra du jour :</b><br><br>
-            « {MANTRAS_PAR_SIGNE[signe]} »
+            « {get_mantra(signe)} »
         </div>
         """, unsafe_allow_html=True)
 
@@ -558,7 +577,7 @@ if signe and donnees:
         # Compatibilité avec le signe choisi
         if signe_amour_nom != "-- Aucun --":
             signe_amour = next(s for s in Signe if s.nom == signe_amour_nom)
-            score = COMPATIBILITE_AMOUREUSE[signe][signe_amour]
+            score = get_compatibilite(signe.nom, signe_amour.nom)
             coeurs = "❤️" * score + "🤍" * (5 - score)
             st.markdown(f"""
             <div class='card' style='text-align:center;'>
@@ -574,7 +593,7 @@ if signe and donnees:
         cols = st.columns(3)
         signes_list = list(Signe)
         for i, autre_signe in enumerate(signes_list):
-            score = COMPATIBILITE_AMOUREUSE[signe][autre_signe]
+            score = get_compatibilite(signe.nom, autre_signe.nom)
             coeurs = "❤️" * score + "🤍" * (5 - score)
             with cols[i % 3]:
                 st.markdown(f"""
@@ -611,7 +630,7 @@ if signe and donnees:
             st.markdown(f"""
             <div class='card'>
                 <h3>💬 Mantra Personnel</h3>
-                <p style='font-style:italic;'>« {MANTRAS_PAR_SIGNE[signe]} »</p>
+                <p style='font-style:italic;'>« {get_mantra(signe)} »</p>
             </div>
             """, unsafe_allow_html=True)
 
