@@ -260,7 +260,7 @@ st.set_page_config(
     page_title="✨ Astrologie & Pierres",
     page_icon="🔮",
     layout="centered",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 # ── PWA & Meta Tags ───────────────────────────────────────────────────────────
@@ -310,17 +310,58 @@ st.markdown("""
 # ── CSS personnalisé ───────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-    /* Cacher la barre d'outils Streamlit */
+    /* Cacher la barre d'outils Streamlit et sidebar */
     header { display: none !important; }
     #MainMenu { display: none !important; }
     footer { display: none !important; }
+    [data-testid="stSidebar"] { display: none !important; }
     
     /* Fond général */
     .stApp { background-color: #0a0e27; color: #ffffff; }
     
+    /* Menu horizontal en haut */
+    .nav-menu {
+        display: flex;
+        gap: 8px;
+        padding: 12px 10px;
+        background: linear-gradient(135deg, #0f1629, #1a1f3a);
+        border-bottom: 2px solid #c77dff;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        overflow-x: auto;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .nav-btn {
+        padding: 8px 14px;
+        border: 2px solid transparent;
+        background-color: transparent;
+        color: #d8b3ff;
+        cursor: pointer;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        transition: all 0.2s;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+    
+    .nav-btn:hover {
+        background-color: #2d3561;
+        border-color: #c77dff;
+        color: #c77dff;
+    }
+    
+    .nav-btn.active {
+        background: linear-gradient(135deg, #5a4fcf, #c77dff);
+        color: #ffffff;
+        border-color: #c77dff;
+    }
+    
     /* Sidebar */
-    [data-testid="stSidebar"] { background-color: #0f1629; }
-    [data-testid="stSidebar"] [data-testid="stBaseButton"] { width: 100%; }
+    [data-testid="stSidebar"] { background-color: #0f1629; display: none !important; }
     
     /* Titre principal */
     h1 { color: #c77dff !important; text-align: center; }
@@ -450,6 +491,17 @@ st.markdown("""
             padding: 10px 24px !important;
             font-size: 1rem !important;
             min-height: 44px !important;
+            background: linear-gradient(135deg, #5a4fcf, #c77dff) !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 8px !important;
+            font-weight: 600 !important;
+            width: 100% !important;
+        }
+        
+        /* Menu columns */
+        [data-testid="column"] {
+            padding: 4px !important;
         }
         
         /* Colonnes */
@@ -538,8 +590,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-
-# ── En-tête ───────────────────────────────────────────────────────────────────
+# ── Menu horizontal ───────────────────────────────────────────────────────────
 
 # Initialiser la session state
 if "page" not in st.session_state:
@@ -549,56 +600,61 @@ if "signe" not in st.session_state:
 if "donnees_user" not in st.session_state:
     st.session_state.donnees_user = {}
 
-# Sidebar Navigation
-with st.sidebar:
-    st.markdown("# ✨ Astrologie & Pierres")
-    st.markdown("---")
-    
-    pages = [
-        "🏠 Accueil",
-        "🌟 Profil Astral",
-        "💎 Pierres & Chakras",
-        "💕 Compatibilité",
-        "🧘 Bien-être",
-    ]
-    
-    page_selectionnee = st.radio(
-        "Navigation",
-        pages,
-        label_visibility="collapsed",
-    )
-    st.session_state.page = page_selectionnee
-    
-    st.markdown("---")
-    st.markdown(
-        "<p style='text-align:center; color:#b4b9d1; font-size:0.85rem;'>"
-        "Remplissez le formulaire pour commencer</p>",
-        unsafe_allow_html=True,
-    )
-    
-    # Bouton d'installation PWA
-    st.markdown("""
-    <button id="install-btn" onclick="installApp()">
-        📲 Ajouter à l'écran d'accueil
-    </button>
-    """, unsafe_allow_html=True)
-    
-    # Instructions d'installation
-    with st.expander("📱 Installation sur mobile"):
+# Menu horizontal en haut
+pages = [
+    "🏠 Accueil",
+    "🌟 Profil Astral",
+    "💎 Pierres & Chakras",
+    "💕 Compatibilité",
+    "🧘 Bien-être",
+]
+
+col1, col2, col3, col4, col5 = st.columns(5)
+
+with col1:
+    if st.button("🏠 Accueil", key="nav_accueil", use_container_width=True):
+        st.session_state.page = "🏠 Accueil"
+        st.rerun()
+
+with col2:
+    if st.button("🌟 Profil", key="nav_profil", use_container_width=True):
+        st.session_state.page = "🌟 Profil Astral"
+        st.rerun()
+
+with col3:
+    if st.button("💎 Pierres", key="nav_pierres", use_container_width=True):
+        st.session_state.page = "💎 Pierres & Chakras"
+        st.rerun()
+
+with col4:
+    if st.button("💕 Compat.", key="nav_compat", use_container_width=True):
+        st.session_state.page = "💕 Compatibilité"
+        st.rerun()
+
+with col5:
+    if st.button("🧘 Bien-être", key="nav_wellbeing", use_container_width=True):
+        st.session_state.page = "🧘 Bien-être"
+        st.rerun()
+
+st.markdown("---")
+
+# Installation PWA - dans le bas en expandable
+with st.expander("📲 Ajouter l'app"):
+    col_install = st.columns([1, 1])
+    with col_install[0]:
         st.markdown("""
-        **iPhone/iPad (Safari):**
-        1. Appuyez sur le bouton de partage
-        2. Sélectionnez « Sur l'écran d'accueil »
-        3. Confirmez
-        
-        **Android (Chrome):**
-        1. Appuyez sur le menu (⋮)
-        2. Sélectionnez « Installer l'application »
-        3. Confirmez
-        
-        **Web (Desktop):**
-        Utiliser le navigateur normalement
+        <button id="install-btn" onclick="installApp()" style="width:100%; padding:12px; font-weight:bold;">
+            📲 Installer
+        </button>
         """, unsafe_allow_html=True)
+    
+    with col_install[1]:
+        st.markdown("""
+        **Indications :**
+        - **iPhone** : Partage → Écran d'accueil
+        - **Android** : Menu → Installer
+        """)
+
 
 # Titre principal
 st.markdown("# ✨ Astrologie & Pierres de Pouvoir")
