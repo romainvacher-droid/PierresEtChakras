@@ -259,11 +259,23 @@ def get_mantra(signe: Signe) -> str:
 st.set_page_config(
     page_title="✨ Astrologie & Pierres",
     page_icon="🔮",
-    layout="wide",
-    initial_sidebar_state="expanded",
+    layout="centered",
+    initial_sidebar_state="auto",
 )
 
-# ── CSS personnalisé ──────────────────────────────────────────────────────────
+# ── PWA & Meta Tags ───────────────────────────────────────────────────────────
+st.markdown("""
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a0e27">
+<meta name="description" content="Découvrez votre thème astral, vos pierres de pouvoir et votre bien-être quotidien">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Astrologie & Pierres">
+<link rel="manifest" href="data:application/manifest+json,{%22name%22:%22Astrologie%20et%20Pierres%22,%22short_name%22:%22Astrologie%22,%22description%22:%22Votre guide astral%22,%22start_url%22:%22/%22,%22display%22:%22standalone%22,%22background_color%22:%22%230a0e27%22,%22theme_color%22:%22%23c77dff%22,%22icons%22:[{%22src%22:%22data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%20192%20192%27%3E%3Crect%20fill=%27%23c77dff%27%20width=%27192%27%20height=%27192%27/%3E%3Ctext%20x=%2796%27%20y=%27140%27%20font-size=%27100%27%20text-anchor=%27middle%27%20fill=%27%230a0e27%27%3E🔮%3C/text%3E%3C/svg%3E%22,%22sizes%22:%22192x192%22,%22type%22:%22image/svg+xml%22,%22purpose%22:%22any%22}]}">
+""", unsafe_allow_html=True)
+
+# ── CSS personnalisé ───────────────────────────────────────────────────────────
 st.markdown("""
 <style>
     /* Cacher la barre d'outils Streamlit */
@@ -374,6 +386,89 @@ st.markdown("""
 
     /* Séparateur */
     hr { border-color: #2d3561; }
+    
+    /* ─── RESPONSIVE MOBILE ─── */
+    @media (max-width: 768px) {
+        /* Layout mobile */
+        .stApp { padding: 0 !important; }
+        .stMainBlockContainer { padding: 1rem 0.5rem !important; }
+        
+        /* Menu responsive */
+        [data-testid="stSidebar"] { width: 100% !important; }
+        .stTabs [role="tablist"] { flex-wrap: wrap; }
+        
+        /* Titres réduits */
+        h1 { font-size: 1.8rem !important; margin-bottom: 0.5rem !important; }
+        h2 { font-size: 1.4rem !important; }
+        h3 { font-size: 1.1rem !important; }
+        
+        /* Cartes adaptées */
+        .card {
+            padding: 15px !important;
+            margin: 8px 0 !important;
+            border-radius: 12px !important;
+        }
+        .card-pierre {
+            padding: 10px !important;
+            margin: 4px 0 !important;
+        }
+        
+        /* Boutons */
+        .stButton>button {
+            padding: 10px 24px !important;
+            font-size: 1rem !important;
+            min-height: 44px !important;
+        }
+        
+        /* Colonnes */
+        [data-testid="column"] { width: 100% !important; }
+        
+        /* Inputs */
+        .stTextInput>div>div>input,
+        .stSelectbox>div>div>select,
+        .stDateInput>div>div>input {
+            font-size: 16px !important;
+            padding: 12px 10px !important;
+        }
+        
+        /* Mantra et cartes */
+        .mantra {
+            padding: 14px !important;
+            font-size: 0.95rem !important;
+            line-height: 1.5 !important;
+        }
+        
+        /* Tables au scroll */
+        .stDataFrame {
+            font-size: 0.85rem !important;
+        }
+    }
+    
+    @media (max-width: 480px) {
+        /* Très petit écran */
+        h1 { font-size: 1.4rem !important; }
+        h2 { font-size: 1.1rem !important; }
+        h3 { font-size: 1rem !important; }
+        
+        .card {
+            padding: 12px !important;
+            margin: 6px 0 !important;
+        }
+        
+        /* Navigation */
+        .stTabs [role="tablist"] {
+            gap: 4px !important;
+        }
+        
+        .stButton>button {
+            padding: 10px 16px !important;
+            font-size: 0.95rem !important;
+        }
+        
+        .label { font-size: 0.8rem !important; }
+        .coeur { font-size: 1.1rem !important; }
+    }
+
 </style>
 """, unsafe_allow_html=True)
 
