@@ -215,6 +215,24 @@ def phase_lunaire_actuelle() -> str:
     return phases[idx]
 
 
+def get_pierres(signe: Signe) -> list:
+    """Obtenir les pierres par signe (avec mappage par nom pour éviter les problèmes de cache)"""
+    nom_map = {s.nom: PIERRES_PAR_SIGNE[s] for s in Signe if s in PIERRES_PAR_SIGNE}
+    return nom_map.get(signe.nom, [])
+
+
+def get_chakra(signe: Signe) -> dict:
+    """Obtenir le chakra par signe"""
+    nom_map = {s.nom: CHAKRAS_PAR_SIGNE[s] for s in Signe if s in CHAKRAS_PAR_SIGNE}
+    return nom_map.get(signe.nom, {})
+
+
+def get_couleurs(signe: Signe) -> list:
+    """Obtenir les couleurs par signe"""
+    nom_map = {s.nom: COULEURS_SIGNE[s] for s in Signe if s in COULEURS_SIGNE}
+    return nom_map.get(signe.nom, [])
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # INTERFACE STREAMLIT
 # ─────────────────────────────────────────────────────────────────────────────
@@ -223,15 +241,24 @@ st.set_page_config(
     page_title="✨ Astrologie & Pierres",
     page_icon="🔮",
     layout="wide",
-    initial_sidebar_state="collapsed",
+    initial_sidebar_state="expanded",
 )
 
 # ── CSS personnalisé ──────────────────────────────────────────────────────────
 st.markdown("""
 <style>
+    /* Cacher la barre d'outils Streamlit */
+    header { display: none !important; }
+    #MainMenu { display: none !important; }
+    footer { display: none !important; }
+    
     /* Fond général */
     .stApp { background-color: #0a0e27; color: #ffffff; }
-
+    
+    /* Sidebar */
+    [data-testid="stSidebar"] { background-color: #0f1629; }
+    [data-testid="stSidebar"] [data-testid="stBaseButton"] { width: 100%; }
+    
     /* Titre principal */
     h1 { color: #c77dff !important; text-align: center; }
     h2 { color: #d8b3ff !important; }
@@ -277,14 +304,49 @@ st.markdown("""
     }
     .stButton>button:hover { opacity: 0.9; }
 
-    /* Inputs */
-    .stTextInput>div>div>input,
+    /* Inputs texte (Nom et Prénom) */
+    .stTextInput>div>div>input {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        border: 2px solid #5a4fcf !important;
+        border-radius: 8px !important;
+        padding: 10px 12px !important;
+        font-size: 1rem !important;
+    }
+    
+    /* Focus état inputs texte */
+    .stTextInput>div>div>input:focus {
+        background-color: #f5f5f5 !important;
+        border: 2px solid #c77dff !important;
+        box-shadow: inset 0 0 4px rgba(199, 125, 255, 0.3) !important;
+    }
+    
+    /* Selectbox et DateInput */
     .stSelectbox>div>div>select,
     .stDateInput>div>div>input {
-        background-color: #1a1f3a !important;
+        background-color: #2d3a5c !important;
         color: #ffffff !important;
-        border: 1px solid #2d3561 !important;
+        border: 2px solid #5a4fcf !important;
         border-radius: 8px !important;
+        padding: 10px 12px !important;
+        font-size: 1rem !important;
+    }
+    
+    /* Focus états selectbox et date */
+    .stSelectbox>div>div>select:focus,
+    .stDateInput>div>div>input:focus {
+        background-color: #3a4a7a !important;
+        border: 2px solid #c77dff !important;
+        box-shadow: inset 0 0 4px rgba(199, 125, 255, 0.3) !important;
+    }
+    
+    /* Labels des inputs */
+    .stTextInput>label,
+    .stSelectbox>label,
+    .stDateInput>label {
+        color: #d8b3ff !important;
+        font-weight: 600 !important;
+        font-size: 1.05rem !important;
     }
 
     /* Tabs */
@@ -298,219 +360,271 @@ st.markdown("""
 
 
 # ── En-tête ───────────────────────────────────────────────────────────────────
+
+# Initialiser la session state
+if "page" not in st.session_state:
+    st.session_state.page = "🏠 Accueil"
+if "signe" not in st.session_state:
+    st.session_state.signe = None
+if "donnees_user" not in st.session_state:
+    st.session_state.donnees_user = {}
+
+# Sidebar Navigation
+with st.sidebar:
+    st.markdown("# ✨ Astrologie & Pierres")
+    st.markdown("---")
+    
+    pages = [
+        "🏠 Accueil",
+        "🌟 Profil Astral",
+        "💎 Pierres & Chakras",
+        "💕 Compatibilité",
+        "🧘 Bien-être",
+    ]
+    
+    page_selectionnee = st.radio(
+        "Navigation",
+        pages,
+        label_visibility="collapsed",
+    )
+    st.session_state.page = page_selectionnee
+    
+    st.markdown("---")
+    st.markdown(
+        "<p style='text-align:center; color:#b4b9d1; font-size:0.85rem;'>"
+        "Remplissez le formulaire pour commencer</p>",
+        unsafe_allow_html=True
+    )
+
+# Titre principal
 st.markdown("# ✨ Astrologie & Pierres de Pouvoir")
 st.markdown("<p style='text-align:center; color:#b4b9d1;'>Découvrez votre destinée astrale</p>", unsafe_allow_html=True)
 st.markdown("---")
 
 
-# ── Formulaire ────────────────────────────────────────────────────────────────
-with st.container():
+# ── Page : Accueil ────────────────────────────────────────────────────────────
+if st.session_state.page == "🏠 Accueil":
     st.markdown("## 👤 Informations Personnelles")
     col1, col2 = st.columns(2)
     with col1:
-        nom     = st.text_input("Nom", placeholder="Votre nom de famille")
-        prenoms = st.text_input("Prénom(s)", placeholder="Votre prénom")
+        nom     = st.text_input("Nom", placeholder="Votre nom de famille", key="nom_input")
+        prenoms = st.text_input("Prénom(s)", placeholder="Votre prénom", key="prenoms_input")
     with col2:
         date_naissance = st.date_input(
             "Date de naissance",
             value=date(1995, 6, 15),
             min_value=date(1900, 1, 1),
             max_value=date.today(),
+            key="date_input"
         )
         noms_signes = [s.nom for s in Signe]
         signe_amour_nom = st.selectbox(
             "💕 Compatibilité avec (optionnel)",
             options=["-- Aucun --"] + noms_signes,
+            key="signe_amour_select"
         )
 
     st.markdown("<br>", unsafe_allow_html=True)
-    lancer = st.button("🚀 Découvrir mon Thème Astral")
+    
+    if st.button("🚀 Découvrir mon Thème Astral", use_container_width=True):
+        if not nom or not prenoms:
+            st.error("⚠️ Veuillez renseigner votre nom et prénom.")
+        else:
+            signe = determiner_signe(date_naissance.day, date_naissance.month)
+            st.session_state.signe = signe
+            st.session_state.donnees_user = {
+                "nom": nom,
+                "prenoms": prenoms,
+                "date_naissance": date_naissance,
+                "signe_amour_nom": signe_amour_nom,
+            }
+            st.session_state.page = "🌟 Profil Astral"
+            st.rerun()
 
 
-# ── Résultats ─────────────────────────────────────────────────────────────────
-if lancer:
-    if not nom or not prenoms:
-        st.error("⚠️ Veuillez renseigner votre nom et prénom.")
-    else:
-        signe      = determiner_signe(date_naissance.day, date_naissance.month)
-        age        = calculer_age(date_naissance)
-        nom_complet = f"{prenoms} {nom}"
-        chakra     = CHAKRAS_PAR_SIGNE[signe]
-        pierres    = PIERRES_PAR_SIGNE[signe]
-        cristal    = CRISTAL_DE_NAISSANCE_MOIS[date_naissance.month]
-        prop_cristal = PROPRIETES_CRISTAL_MOIS[date_naissance.month]
-        phase      = phase_lunaire_actuelle()
-        emoji_elem = EMOJI_ELEMENT[signe.element]
+# ── Vérifier si données disponibles ────────────────────────────────────────────
+if st.session_state.signe is None and st.session_state.page != "🏠 Accueil":
+    st.warning("⚠️ Veuillez d'abord remplir le formulaire d'accueil")
+    st.stop()
 
-        st.markdown("---")
+# Récupérer les données
+signe = st.session_state.signe
+donnees = st.session_state.donnees_user
 
-        # ── Onglets de résultats ──────────────────────────────────────────────
-        tab1, tab2, tab3, tab4 = st.tabs([
-            "🌟 Profil Astral",
-            "💎 Pierres & Chakras",
-            "💕 Compatibilité",
-            "🧘 Bien-être",
-        ])
+if signe and donnees:
+    prenoms = donnees["prenoms"]
+    nom = donnees["nom"]
+    date_naissance = donnees["date_naissance"]
+    signe_amour_nom = donnees["signe_amour_nom"]
+    
+    age        = calculer_age(date_naissance)
+    nom_complet = f"{prenoms} {nom}"
+    chakra     = get_chakra(signe)
+    pierres    = get_pierres(signe)
+    cristal    = CRISTAL_DE_NAISSANCE_MOIS[date_naissance.month]
+    prop_cristal = PROPRIETES_CRISTAL_MOIS[date_naissance.month]
+    phase      = phase_lunaire_actuelle()
+    emoji_elem = EMOJI_ELEMENT[signe.element]
 
-        # ────── TAB 1 : Profil ────────────────────────────────────────────────
-        with tab1:
-            st.markdown(f"## {signe.symbole} Profil de {nom_complet}")
+    # ────── PAGE : Profil Astral ──────────────────────────────────────────────
+    if st.session_state.page == "🌟 Profil Astral":
+        st.markdown(f"## {signe.symbole} Profil de {nom_complet}")
 
-            col_a, col_b, col_c, col_d = st.columns(4)
-            col_a.metric("Signe", f"{signe.symbole} {signe.nom}")
-            col_b.metric("Élément", f"{emoji_elem} {signe.element}")
-            col_c.metric("Planète", f"🪐 {signe.planete}")
-            col_d.metric("Âge", f"{age} ans")
+        col_a, col_b, col_c, col_d = st.columns(4)
+        col_a.metric("Signe", f"{signe.symbole} {signe.nom}")
+        col_b.metric("Élément", f"{emoji_elem} {signe.element}")
+        col_c.metric("Planète", f"🪐 {signe.planete}")
+        col_d.metric("Âge", f"{age} ans")
 
-            st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("<br>", unsafe_allow_html=True)
 
-            col_l, col_r = st.columns(2)
+        col_l, col_r = st.columns(2)
 
-            with col_l:
-                st.markdown(f"""
-                <div class='card'>
-                    <h3>🔮 Informations Générales</h3>
-                    <p><span class='label'>Nom complet :</span> <b>{nom_complet}</b></p>
-                    <p><span class='label'>Date de naissance :</span> <b>{date_naissance.strftime('%d %B %Y')}</b></p>
-                    <p><span class='label'>Signe astrologique :</span> <b>{signe.symbole} {signe.nom}</b></p>
-                    <p><span class='label'>Élément :</span> <b>{emoji_elem} {signe.element}</b> — {DESCRIPTIONS_ELEMENTS[signe.element]}</p>
-                    <p><span class='label'>Planète dominante :</span> <b>🪐 {signe.planete}</b></p>
-                </div>
-                """, unsafe_allow_html=True)
-
-            with col_r:
-                couleurs = COULEURS_SIGNE[signe]
-                st.markdown(f"""
-                <div class='card'>
-                    <h3>🌈 Couleurs Porte-Bonheur</h3>
-                    <p>{"  •  ".join(f"<b>{c}</b>" for c in couleurs)}</p>
-                    <br>
-                    <h3>{phase}</h3>
-                    <p>{INFLUENCES_LUNAIRES[phase]}</p>
-                </div>
-                """, unsafe_allow_html=True)
-
-            st.markdown("<br>", unsafe_allow_html=True)
-            st.markdown(f"""
-            <div class='mantra'>
-                💬 <b>Mantra du jour :</b><br><br>
-                « {MANTRAS_PAR_SIGNE[signe]} »
-            </div>
-            """, unsafe_allow_html=True)
-
-        # ────── TAB 2 : Pierres & Chakras ────────────────────────────────────
-        with tab2:
-            st.markdown(f"## 💎 Pierres de Pouvoir — {signe.symbole} {signe.nom}")
-
-            cols = st.columns(2)
-            for i, pierre in enumerate(pierres):
-                with cols[i % 2]:
-                    st.markdown(f"""
-                    <div class='card-pierre'>
-                        <b>💎 {pierre['nom']}</b><br>
-                        <span class='label'>Couleur :</span> {pierre['couleur']}<br>
-                        <span class='label'>Propriétés :</span> {pierre['proprietes']}
-                    </div>
-                    """, unsafe_allow_html=True)
-
-            st.markdown("<br>", unsafe_allow_html=True)
-
-            col_ch, col_cr = st.columns(2)
-
-            with col_ch:
-                st.markdown(f"""
-                <div class='card'>
-                    <h3>🌀 Chakra Principal</h3>
-                    <p><b>{chakra['nom']}</b></p>
-                    <p><span class='label'>Couleur :</span> {chakra['couleur']}</p>
-                    <p><span class='label'>Localisation :</span> {chakra['localisation']}</p>
-                </div>
-                """, unsafe_allow_html=True)
-
-            with col_cr:
-                st.markdown(f"""
-                <div class='card'>
-                    <h3>💠 Cristal de Naissance</h3>
-                    <p><b>{cristal}</b></p>
-                    <p><span class='label'>Mois :</span> {date_naissance.strftime('%B')}</p>
-                    <p><span class='label'>Propriétés :</span> {prop_cristal}</p>
-                </div>
-                """, unsafe_allow_html=True)
-
-        # ────── TAB 3 : Compatibilité ─────────────────────────────────────────
-        with tab3:
-            st.markdown(f"## 💕 Compatibilité Amoureuse — {signe.symbole} {signe.nom}")
-
-            # Compatibilité avec le signe choisi dans le formulaire
-            if signe_amour_nom != "-- Aucun --":
-                signe_amour = next(s for s in Signe if s.nom == signe_amour_nom)
-                score = COMPATIBILITE_AMOUREUSE[signe][signe_amour]
-                coeurs = "❤️" * score + "🤍" * (5 - score)
-                st.markdown(f"""
-                <div class='card' style='text-align:center;'>
-                    <h3>{signe.symbole} {signe.nom} + {signe_amour.symbole} {signe_amour.nom}</h3>
-                    <p style='font-size:2rem;'>{coeurs}</p>
-                    <p><b>{score}/5</b> — {'Affinité exceptionnelle ✨' if score == 5 else 'Bonne compatibilité 💫' if score >= 3 else 'Compatibilité modérée 🌙'}</p>
-                </div>
-                """, unsafe_allow_html=True)
-                st.markdown("<br>", unsafe_allow_html=True)
-
-            # Tableau complet
-            st.markdown("### Compatibilité avec tous les signes")
-            cols = st.columns(3)
-            signes_list = list(Signe)
-            for i, autre_signe in enumerate(signes_list):
-                score = COMPATIBILITE_AMOUREUSE[signe][autre_signe]
-                coeurs = "❤️" * score + "🤍" * (5 - score)
-                with cols[i % 3]:
-                    st.markdown(f"""
-                    <div class='card-pierre'>
-                        <b>{autre_signe.symbole} {autre_signe.nom}</b><br>
-                        {coeurs}
-                    </div>
-                    """, unsafe_allow_html=True)
-
-        # ────── TAB 4 : Bien-être ─────────────────────────────────────────────
-        with tab4:
-            st.markdown(f"## 🧘 Bien-être & Conseils — {emoji_elem} {signe.element}")
-
+        with col_l:
             st.markdown(f"""
             <div class='card'>
-                <h3>🌿 Conseil du Jour</h3>
-                <p style='font-size:1.05rem;'>{CONSEILS_BIEN_ETRE[signe.element]}</p>
+                <h3>🔮 Informations Générales</h3>
+                <p><span class='label'>Nom complet :</span> <b>{nom_complet}</b></p>
+                <p><span class='label'>Date de naissance :</span> <b>{date_naissance.strftime('%d %B %Y')}</b></p>
+                <p><span class='label'>Signe astrologique :</span> <b>{signe.symbole} {signe.nom}</b></p>
+                <p><span class='label'>Élément :</span> <b>{emoji_elem} {signe.element}</b> — {DESCRIPTIONS_ELEMENTS[signe.element]}</p>
+                <p><span class='label'>Planète dominante :</span> <b>🪐 {signe.planete}</b></p>
             </div>
             """, unsafe_allow_html=True)
 
-            st.markdown("<br>", unsafe_allow_html=True)
-
-            col_lune, col_mantra = st.columns(2)
-            with col_lune:
-                st.markdown(f"""
-                <div class='card'>
-                    <h3>🌙 Influence Lunaire</h3>
-                    <p><b>{phase}</b></p>
-                    <p>{INFLUENCES_LUNAIRES[phase]}</p>
-                </div>
-                """, unsafe_allow_html=True)
-
-            with col_mantra:
-                st.markdown(f"""
-                <div class='card'>
-                    <h3>💬 Mantra Personnel</h3>
-                    <p style='font-style:italic;'>« {MANTRAS_PAR_SIGNE[signe]} »</p>
-                </div>
-                """, unsafe_allow_html=True)
-
-            st.markdown("<br>", unsafe_allow_html=True)
-            st.markdown("### 🌈 Résumé de votre Profil")
+        with col_r:
+            couleurs = get_couleurs(signe)
             st.markdown(f"""
             <div class='card'>
-                <p>✦ <b>Signe :</b> {signe.symbole} {signe.nom} &nbsp;|&nbsp;
-                   <b>Élément :</b> {emoji_elem} {signe.element} &nbsp;|&nbsp;
-                   <b>Planète :</b> 🪐 {signe.planete}</p>
-                <p>✦ <b>Chakra :</b> {chakra['nom']} ({chakra['couleur']})</p>
-                <p>✦ <b>Pierre principale :</b> 💎 {pierres[0]['nom']} — {pierres[0]['proprietes']}</p>
-                <p>✦ <b>Cristal de naissance :</b> 💠 {cristal} — {prop_cristal}</p>
-                <p>✦ <b>Couleurs :</b> {', '.join(COULEURS_SIGNE[signe])}</p>
+                <h3>🌈 Couleurs Porte-Bonheur</h3>
+                <p>{"  •  ".join(f"<b>{c}</b>" for c in couleurs)}</p>
+                <br>
+                <h3>{phase}</h3>
+                <p>{INFLUENCES_LUNAIRES[phase]}</p>
             </div>
             """, unsafe_allow_html=True)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown(f"""
+        <div class='mantra'>
+            💬 <b>Mantra du jour :</b><br><br>
+            « {MANTRAS_PAR_SIGNE[signe]} »
+        </div>
+        """, unsafe_allow_html=True)
+
+    # ────── PAGE : Pierres & Chakras ──────────────────────────────────────────
+    elif st.session_state.page == "💎 Pierres & Chakras":
+        st.markdown(f"## 💎 Pierres de Pouvoir — {signe.symbole} {signe.nom}")
+
+        cols = st.columns(2)
+        for i, pierre in enumerate(pierres):
+            with cols[i % 2]:
+                st.markdown(f"""
+                <div class='card-pierre'>
+                    <b>💎 {pierre['nom']}</b><br>
+                    <span class='label'>Couleur :</span> {pierre['couleur']}<br>
+                    <span class='label'>Propriétés :</span> {pierre['proprietes']}
+                </div>
+                """, unsafe_allow_html=True)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        col_ch, col_cr = st.columns(2)
+
+        with col_ch:
+            st.markdown(f"""
+            <div class='card'>
+                <h3>🌀 Chakra Principal</h3>
+                <p><b>{chakra['nom']}</b></p>
+                <p><span class='label'>Couleur :</span> {chakra['couleur']}</p>
+                <p><span class='label'>Localisation :</span> {chakra['localisation']}</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+        with col_cr:
+            st.markdown(f"""
+            <div class='card'>
+                <h3>💠 Cristal de Naissance</h3>
+                <p><b>{cristal}</b></p>
+                <p><span class='label'>Mois :</span> {date_naissance.strftime('%B')}</p>
+                <p><span class='label'>Propriétés :</span> {prop_cristal}</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+    # ────── PAGE : Compatibilité ──────────────────────────────────────────────
+    elif st.session_state.page == "💕 Compatibilité":
+        st.markdown(f"## 💕 Compatibilité Amoureuse — {signe.symbole} {signe.nom}")
+
+        # Compatibilité avec le signe choisi
+        if signe_amour_nom != "-- Aucun --":
+            signe_amour = next(s for s in Signe if s.nom == signe_amour_nom)
+            score = COMPATIBILITE_AMOUREUSE[signe][signe_amour]
+            coeurs = "❤️" * score + "🤍" * (5 - score)
+            st.markdown(f"""
+            <div class='card' style='text-align:center;'>
+                <h3>{signe.symbole} {signe.nom} + {signe_amour.symbole} {signe_amour.nom}</h3>
+                <p style='font-size:2rem;'>{coeurs}</p>
+                <p><b>{score}/5</b> — {'Affinité exceptionnelle ✨' if score == 5 else 'Bonne compatibilité 💫' if score >= 3 else 'Compatibilité modérée 🌙'}</p>
+            </div>
+            """, unsafe_allow_html=True)
+            st.markdown("<br>", unsafe_allow_html=True)
+
+        # Tableau complet
+        st.markdown("### Compatibilité avec tous les signes")
+        cols = st.columns(3)
+        signes_list = list(Signe)
+        for i, autre_signe in enumerate(signes_list):
+            score = COMPATIBILITE_AMOUREUSE[signe][autre_signe]
+            coeurs = "❤️" * score + "🤍" * (5 - score)
+            with cols[i % 3]:
+                st.markdown(f"""
+                <div class='card-pierre'>
+                    <b>{autre_signe.symbole} {autre_signe.nom}</b><br>
+                    {coeurs}
+                </div>
+                """, unsafe_allow_html=True)
+
+    # ────── PAGE : Bien-être ──────────────────────────────────────────────────
+    elif st.session_state.page == "🧘 Bien-être":
+        st.markdown(f"## 🧘 Bien-être & Conseils — {emoji_elem} {signe.element}")
+
+        st.markdown(f"""
+        <div class='card'>
+            <h3>🌿 Conseil du Jour</h3>
+            <p style='font-size:1.05rem;'>{CONSEILS_BIEN_ETRE[signe.element]}</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        col_lune, col_mantra = st.columns(2)
+        with col_lune:
+            st.markdown(f"""
+            <div class='card'>
+                <h3>🌙 Influence Lunaire</h3>
+                <p><b>{phase}</b></p>
+                <p>{INFLUENCES_LUNAIRES[phase]}</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+        with col_mantra:
+            st.markdown(f"""
+            <div class='card'>
+                <h3>💬 Mantra Personnel</h3>
+                <p style='font-style:italic;'>« {MANTRAS_PAR_SIGNE[signe]} »</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("### 🌈 Résumé de votre Profil")
+        st.markdown(f"""
+        <div class='card'>
+            <p>✦ <b>Signe :</b> {signe.symbole} {signe.nom} &nbsp;|&nbsp;
+               <b>Élément :</b> {emoji_elem} {signe.element} &nbsp;|&nbsp;
+               <b>Planète :</b> 🪐 {signe.planete}</p>
+            <p>✦ <b>Chakra :</b> {chakra['nom']} ({chakra['couleur']})</p>
+            <p>✦ <b>Pierre principale :</b> 💎 {pierres[0]['nom']} — {pierres[0]['proprietes']}</p>
+            <p>✦ <b>Cristal de naissance :</b> 💠 {cristal} — {prop_cristal}</p>
+            <p>✦ <b>Couleurs :</b> {', '.join(get_couleurs(signe))}</p>
+        </div>
+        """, unsafe_allow_html=True)
